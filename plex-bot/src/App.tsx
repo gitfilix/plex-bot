@@ -6,6 +6,7 @@ import ChatApp from './components/ChatApp';
 function App() {
   const [showChat, setShowChat] = useState(false);
 
+
   const handleEntryButtonClick = () => {
     setShowChat(true);
   };
