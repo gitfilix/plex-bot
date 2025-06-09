@@ -13,7 +13,7 @@ function App() {
 
   return (
     <>
-      <h1>Welcome to the Perplexity Chatbot!</h1>
+      <h1>FLX-Plex question Bot</h1>
       {!showChat ? (
         <EntryButton onClick={handleEntryButtonClick} />
       ) : (

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 type Message = {
   role: 'user' | 'assistant';
-  content: string;
+  content: string | React.ReactNode;
 };
 
 const ChatApp = () => {
@@ -17,12 +17,12 @@ const ChatApp = () => {
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
-    setInput('')
-    setLoading(true)
+    setInput('');
+    setLoading(true);
 
     try {
-      const assistantMessage = await fetchAssistantReply([...messages, userMessage])
-      setMessages(prev => [...prev, assistantMessage])
+      const assistantMessage = await fetchAssistantReply([...messages, userMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       setMessages(prev => [
         ...prev,
@@ -42,7 +42,10 @@ const ChatApp = () => {
       },
       body: JSON.stringify({
         model: 'sonar',
-        messages: chatHistory.map(m => ({ role: m.role, content: m.content })),
+        messages: chatHistory.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : '' })),
+        response_format: {
+          type: 'text'
+        }
       }),
     });
 
@@ -51,15 +54,73 @@ const ChatApp = () => {
     }
 
     const data = await response.json();
+    let content = data.choices?.[0]?.message?.content || 'No response';
+
+    // Format the answer as markdown and render citations and search results
+    const citations = data.citations || [];
+    const searchResults = data.search_results || [];
+
+    content = (
+      <div>
+        {/* Render the answer as markdown-like (simple formatting) */}
+        <div style={{ marginBottom: '1em', whiteSpace: 'pre-line' }}>{content}</div>
+        {/* Render citations if present */}
+        {citations.length > 0 && (
+          <div style={{ fontSize: '0.95em', marginBottom: '0.5em' }}>
+            <strong>Citations:</strong>
+            <ul>
+              {citations.map((url: string, i: number) => (
+                <li key={i}>
+                  <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {/* Render search results if present */}
+        {searchResults.length > 0 && (
+          <div style={{ fontSize: '0.95em' }}>
+            <strong>Search Results:</strong>
+            <ul>
+              {searchResults.map((result: any, i: number) => (
+                <li key={i}>
+                  <a href={result.url} target="_blank" rel="noopener noreferrer">
+                    {result.title || result.url}
+                  </a>
+                  {result.date && <span style={{ marginLeft: 8, color: '#888' }}>({result.date})</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
 
     return {
       role: 'assistant',
-      content: data.choices?.[0]?.message?.content || 'No response',
+      content,
     };
   };
 
   return (
     <div className="chat-app">
+      <div className="chat-header">
+        <h2>Chat with the Web</h2>
+      </div>
+      <div className='chat-menu'>
+        <h2>Chat Menu</h2>
+        <div className='model-selector'>
+         <h3>current Model:</h3>
+          <span>Sonar</span>
+          <select>
+            <optgroup label="Models">
+              <option value="sonar">Sonar</option>
+              <option value="sonar-pro">Sonar-pro</option>
+            </optgroup>
+          </select>  
+         </div>       
+      </div>
+      {/* Chat messages area */}
       <div className="messages">
         {messages.map((msg, index) => (
           <div
